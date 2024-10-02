@@ -1,0 +1,33 @@
+pipeline {
+    agent { label 's142240.devops-ap.be' }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone the git repository
+                git credentialsId: 'git-deploy-key', branch: 'main', url: 'git@github.com:AP-IT-GH/projectopdracht-Hess117.git'
+            }
+        }
+
+        stage('Build and deploy') {
+            environment {
+                MYSQL_USR = credentials('mysql-user')
+                MYSQL_PWD = credentials('mysql-passwd') 
+                MYSQL_DB = credentials('mysql-db')
+                MYSQL_ROOT_PASSWORD = credentials('mysql-root-passwd')
+            }
+            steps {
+                script {
+                    // Commands to deploy app on server
+                    try {
+                        sh "docker compose up --build -d"
+                    } catch (Exception e) {
+                        echo "Error deploying the application: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Deployment failed")
+                    }
+                }
+            }
+        }
+    }
+}
